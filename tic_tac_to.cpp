@@ -69,7 +69,7 @@ int main()
         
 
         int opponent_row;
-        int danger=0; // The coordinates of your opponent's last move
+        int danger=0; 
         int opponent_col;
         cin >> opponent_row >> opponent_col; cin.ignore();
         int valid_action_count; // the number of possible actions for your next move
