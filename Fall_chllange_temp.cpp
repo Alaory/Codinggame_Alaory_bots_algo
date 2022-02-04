@@ -35,7 +35,15 @@ struct item{
         return current_id;
     }
 
-
+    static void update(int &action_count,item* items){
+        for(int i=0;i<action_count;i++){
+            for(int j=0;j<item::ids.size();j++){
+                if(items[i].id == item::ids[j]){
+                    items[i].used = true;
+                }
+            }
+        }
+    }
     bool Can_afford(){
         for(int i=0;i<4;i++){
             if(delta[i] + inv[i] < 0){
@@ -51,9 +59,9 @@ struct item{
             if(Items[i].type != "CAST")
                 continue;
 
-            //cerr << "checking for best cast inside the function..." << endl;
+            
             if(Items[i].used){
-                wanted_cast = -1;
+                item::able_to_rest = true;
                 return;
             }
 
@@ -62,15 +70,14 @@ struct item{
                     if(j == Gem_id)
                         continue;
 
-                    if(Items[i].delta[j] < 0){
-                        //cerr << "we will request gem number "<< j+1 << " for " <<Items[i].id << endl;
-                        get_igre(j,Items,size,j,limitrec);
+                    if((Items[i].delta[j] + item::inv[j]) < 0){
+                        get_igre(j,Items,size,wanted_cast,limitrec);
                     }
                 }
-                //cerr << "limitrec is "<< limitrec<< endl;
-                if(limitrec == 1){
+                
+                if(limitrec){
                     cerr << "i'll use " << Items[i].id  << " which is " << i << endl;
-                    wanted_cast = Items[i].id;
+                    wanted_cast = i;
                     limitrec = 0;
                 }
                 return;
@@ -89,7 +96,7 @@ int item::score = 0;
 bool item::able_to_rest = false;
 int item::hights_price = 0;
 int item::hights_price_index = 0;
-vector<int> item::ids;
+vector<int> item::ids ={};
 
 
 int main()
@@ -110,14 +117,8 @@ int main()
         for (int i = 0; i < 2; i++)
             cin >> item::inv[0] >> item::inv[1] >> item::inv[2] >> item::inv[3] >> item::score; cin.ignore();
 
-
-        for(int i=0;i<action_count;i++){
-            for(int j=0;j<item::ids.size();j++){
-                if(items[i].id == item::ids[j]){
-                    items[i].used =true;
-                }
-            }
-        }
+        item::update(action_count,items);
+        
 
         bool doaloop=false;
         for(int i=0;i<action_count;i++){
@@ -130,33 +131,29 @@ int main()
             continue; //continue with while if done
 
 
-        int id_ezpo = item::find_eazy_po(items,action_count);
-        int wanted_cast=0;
-        cerr << "checking for best cast..." << endl;
+        int id_ezpo = item::find_eazy_po(items,action_count);//cant find a potion need to fix
+        int wanted_cast= 0;
+        cerr << "checking for best cast for " << id_ezpo << endl;
         
-        for(int i=3;i>=0;i++){
-            if((items[id_ezpo].delta[i] - item::inv[i]) < 0 ){
+        for(int i=3;i>=0;i--){
+            if((items[id_ezpo].delta[i] + item::inv[i]) < 0 ){
                 int limitrec = 1;
-                int cast_i = 0;
-                item::get_igre(i,items,action_count,cast_i,limitrec);
-                cerr << "number " << cast_i << " is requested and it is " << cast_i << endl;
+                item::get_igre(i,items,action_count,wanted_cast,limitrec);
+                cerr << "i: " << i << endl;
+                cerr << "id " << items[wanted_cast].id << " is requested and it is " << wanted_cast << endl;
                 cerr << "limitrec is "<< limitrec  << endl;
                 break;
             }
         }
         
-        if(wanted_cast > 0){
+        if(wanted_cast > 0 && items[wanted_cast].Can_afford()){
             cout << "CAST "<< items[wanted_cast].id << endl;
             item::ids.push_back(items[wanted_cast].id);
             item::able_to_rest = true;
-            continue;
-        }else if(wanted_cast == -1){
-            item::able_to_rest = true;
-        }
-        
-        if(item::able_to_rest == true){
+        }else if(item::able_to_rest == true){
             cout << "REST" << endl;
             item::able_to_rest = false;
+            item::ids.clear();
         }else{
             cout << "WAIT" << endl;
         }
