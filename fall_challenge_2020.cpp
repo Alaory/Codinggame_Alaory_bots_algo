@@ -1,5 +1,8 @@
 #include <iostream>
+#include <string>
 #include <vector>
+#include <algorithm>
+// green league 1 <================
 using namespace std;
 
 struct item{
@@ -7,12 +10,45 @@ struct item{
     int id=-1;
     int price=0;
     int delta[4];
+    int recom = 0;
     static int inv[4];
+    static int sis_inv[4];
     static int score;
-    //static int gems[4];
+    static int sis_score;
+    static int hights_price;
+    static int hights_price_index;
+    static vector<int> ids;
     bool used = false;
     static bool able_to_rest;
 
+    static int find_eazy_po(item *Items,int size){
+        int current_index=-1;
+        int favo = -100;
+        for(int i=0;i<size;i++){
+            if(Items[i].type == "CAST")
+                continue;
+            
+            int fava =0;
+            for(int i=0;i<4;i++){
+                fava += Items[i].delta[i] * i;
+            }
+            if(fava > favo){
+                favo = fava;
+                current_index = i;
+            }
+        }
+        return current_index;
+    }
+
+    static void update(int &action_count,item* items){
+        for(int i=0;i<action_count;i++){
+            for(int j=0;j<item::ids.size();j++){
+                if(items[i].id == item::ids[j]){
+                    items[i].used = true;
+                }
+            }
+        }
+    }
     bool Can_afford(){
         for(int i=0;i<4;i++){
             if(delta[i] + inv[i] < 0){
@@ -21,48 +57,62 @@ struct item{
         }
         return true;
     }
-    int howfav(){
-        if(Can_afford()){
-            int fav =0;
-            for(int i=0;i<4;i++){
-                // if(gems[i] <0)
-                //     gems[i] =0;
-                if(delta[i] > 0)
-                    fav += delta[i] * (i+10);
-                else
-                    fav += delta[i] * (i+2);
-                    
-                fav += this->price *100;
+
+    static void get_igre(int Gem_id,item* Items,int &size,int &wanted_cast,int &limitrec){//get ingreatangts
+        cerr << "checking for best cast inside the function..." << endl;
+        for(int i=0;i<size ;i++){
+            if(Items[i].type != "CAST")
+                continue;
+
+            
+            if(Items[i].used){
+                item::able_to_rest = true;
+                return;
             }
-            return fav;
+
+            if(Items[i].delta[Gem_id] > 0){
+                for(int j=0;j<=Gem_id;j++){
+                    if(j == Gem_id)
+                        continue;
+
+                    if((Items[i].delta[j] + item::inv[j]) < 0){
+                        get_igre(j,Items,size,wanted_cast,limitrec);
+                    }
+                    cerr << "here is the sum of them " <<Items[i].delta[j] + item::inv[j] << " currently in " << Items[i].id << endl;
+                    
+                }
+                
+                if(limitrec){
+                    cerr << "inv_1: " << item::inv[0] <<" inv_2: " << item::inv[1] <<" inv_3: " << item::inv[2] <<" inv_4: " << item::inv[3] <<endl;
+                    cerr << "i'll use " << Items[i].id  << endl;
+                    wanted_cast = i;
+                    limitrec = 0;
+                }
+                return;
+            }
         }
-        return 0;
     }
 };
 
 
+
+
+
 int item::inv[] = {};
+int item::sis_inv[] = {};
+//int item::Gem_Vlaue[] ={1,1,1,1};
 int item::score = 0;
+int item::sis_score = 0;
 bool item::able_to_rest = false;
-//int item::gems[] ={1,2,3,4};
+int item::hights_price = 0;
+int item::hights_price_index = 0;
+vector<int> item::ids ={};
 
-
-
-// void set_value_for_gems(int delta[4]){
-//     for(int i=0;i<4;i++){
-//         if(delta[i] < 0){
-//             item::gems[i]+=5;
-//         }else if(delta[i] > 0){
-//             item::gems[i]-=2*delta[i];
-//         }
-
-//     }
-// }
 
 int main()
 {
-    vector<int> ids;
 
+    
     while (1) {
         int action_count; // the number of spells and recipes in play
         cin >> action_count; cin.ignore();
@@ -74,57 +124,55 @@ int main()
             bool repeatable; // for the first two leagues: always 0; later: 1 if this is a repeatable player spell
             cin >>items[i].id >> items[i].type >> items[i].delta[0] >> items[i].delta[1] >> items[i].delta[2] >> items[i].delta[3] >> items[i].price >> tome_index >> tax_count >> castable >> repeatable; cin.ignore();
         }
+        for (int i = 0; i < 2; i++){
+            if(i==0){
+                cin >> item::inv[0] >> item::inv[1] >> item::inv[2] >> item::inv[3] >> item::score; cin.ignore();
+            }
+            else{
+                cin >> item::sis_inv[0] >> item::sis_inv[1] >> item::sis_inv[2] >> item::sis_inv[3] >> item::sis_score; cin.ignore();
+            }
+            cerr << "i'll set those " << "inv_1: " << item::inv[0] <<" inv_2: " << item::inv[1] <<" inv_3: " << item::inv[2] <<" inv_4: " << item::inv[3] <<endl;
+        }
 
-        for (int i = 0; i < 2; i++)
-            cin >> item::inv[0] >> item::inv[1] >> item::inv[2] >> item::inv[3] >> item::score; cin.ignore();
 
-
-
-        int brew_fav=0,id_temp=0,cast_fav=0,id_cast=0;
-
-
+        item::update(action_count,items);
+        bool doaloop=false;
         for(int i=0;i<action_count;i++){
-            for(int j=0;j<ids.size();j++){
-                if(items[i].id == ids[j]){
-                    items[i].used =true;
-                }
+            if(items[i].Can_afford() && items[i].type == "BREW"){
+                cout << "BREW " << items[i].id << endl;
+                doaloop = true;
             }
         }
 
-        for(int i=0;i<action_count;i++){
-            if(items[i].type == "BREW" && items[i].Can_afford() && !items[i].used){
-                int b = items[i].howfav();
-                if(brew_fav < b){
-                    brew_fav = b;
-                    id_temp = i;
-                }
-            }
-            if(items[i].type == "CAST" && items[i].Can_afford() && !items[i].used){
-                int a = items[i].howfav();
-                if(cast_fav < a){
-                    cast_fav = a;
-                    id_cast = i;
-                }
+        if(!doaloop){ 
+        int id_ezpo = item::find_eazy_po(items,action_count);//cant find a potion need to fix
+        int wanted_cast= 0;
+        cerr << "checking for best cast for " << items[id_ezpo].id << endl;
+        for(int i=3;i>=0 && !items[id_ezpo].Can_afford();i--){
+            cerr << "i: " << i << endl;
+            if((items[id_ezpo].delta[i] + item::inv[i]) < 0 ){
+                int limitrec = 1;
+                item::get_igre(i,items,action_count,wanted_cast,limitrec);
+                cerr << "id " << items[wanted_cast].id <<endl;
+                //cerr << "limitrec is "<< limitrec  << endl;
+                break;
             }
         }
-
-        if(id_temp != 0){
-            cout << "BREW " << items[id_temp].id<<endl;
-            items[id_temp].used = true;
+        
+        if(wanted_cast > 0){
+            cout << "CAST "<< items[wanted_cast].id << endl;
+            item::ids.push_back(items[wanted_cast].id);
             item::able_to_rest = true;
-            ids.push_back(items[id_temp].id);
-        }else if(id_cast != 0){
-            cout << "CAST " << items[id_cast].id<<endl;
-            items[id_cast].used = true;
-            item::able_to_rest = true;
-            ids.push_back(items[id_cast].id);
-            //set_value_for_gems(items[id_cast].delta);
-        }else if(item::able_to_rest){
+            for(int i=0;i<4;i++){
+                item::inv[i] += items[wanted_cast].delta[i];
+            }
+        }else if(item::able_to_rest == true){
             cout << "REST" << endl;
             item::able_to_rest = false;
-            ids.clear();
-        }else {
+            item::ids.clear();
+        }else{
             cout << "WAIT" << endl;
+            }
         }
     }
 }
